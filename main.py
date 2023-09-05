@@ -35,25 +35,12 @@ class Game:
     def game_loop(self):
         while self.running:
             self.background_type = self.background_color_game
-            '''
-            if self.win:
-                self.win_time = self.win_time + 1
-            if self.win_time == 10:
-                self.win = False
-                self.background_type = self.background_color_game
-                '''
+            # I wanted to make the background yellow when you win.
             for sprite1 in sprites:
                 for sprite2 in sprites:
                     if sprite1 != sprite2:
                         if self.collision_check(sprite1, sprite2):
                             sys.exit(0)
-                        '''
-                            if sprite1 == Bullet and sprite2 == astroid1 or sprite1 == astroid1 and sprite2 == Bullet:
-                                background_type = self.back_ground_color_win
-                                self.win = True
-                                self.win_time = 0
-                                print("ummm")
-                                '''
 
             events = pygame.event.get()
 
