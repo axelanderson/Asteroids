@@ -97,7 +97,7 @@ class Astroid(Sprite):
     
     def __init__(self):
         self.x = random.randint(0, MAX_SIZE_X)
-        self.y = random.randint(0, MAX_SIZE_Y)
+        self.y = 0
         self.size = random.randint(25, 50)
         self.radius = self.size // 2
 
