@@ -55,13 +55,11 @@ class Game:
 
             for i in range(len(sprites) - 1, -1, -1):
                 if type(sprites[i]) == Bullet:
-                    print(sprites[i].y)
                     if sprites[i].travel_distance() > sprites[i].travel_range:
                         sprites.pop(i)
                         continue
                 sprites[i].draw(self.screen)
 
-            print(len(sprites))
             pygame.display.flip()
 
             self.clock.tick(60)
@@ -76,17 +74,15 @@ class Game:
             return False
 
         x_collision = False
-        if (entity1.x >= entity2.x and entity1.x <= entity2.x + entity2.size[0]) or (entity1.x + entity1.size[0] >= entity2.x and entity2.x and entity1.x + entity1.size[0] <= entity2.x + entity2.size[0]):
+        if (entity1.x >= entity2.x and entity1.x <= entity2.x + entity2.size) or (entity1.x + entity1.size >= entity2.x and entity2.x and entity1.x + entity1.size <= entity2.x + entity2.size):
             x_collision = True
 
         y_collision = False
-        if (entity1.y >= entity2.y and entity1.y <= entity2.y + entity2.size[1]) or (entity1.y + entity1.size[1]>= entity2.y and entity2.y and entity1.y + entity1.size[1] <= entity2.y + entity2.size[1]):
+        if (entity1.y >= entity2.y and entity1.y <= entity2.y + entity2.size) or (entity1.y + entity1.size>= entity2.y and entity2.y and entity1.y + entity1.size <= entity2.y + entity2.size):
             y_collision = True
 
         if x_collision and y_collision:
             return True
-        
-
 
 
 class Sprite(abc.ABC):
@@ -100,37 +96,46 @@ class Sprite(abc.ABC):
 class Astroid(Sprite):
     
     def __init__(self):
-        self.size = (random.randint(25, 50), random.randint(25, 50))
-        self.speed1 = random.randint(-5, 5)
-        self.speed2 = random.randint(-5, 5)
         self.x = random.randint(0, MAX_SIZE_X)
         self.y = 0
+        self.size = random.randint(25, 50)
+        self.radius = self.size // 2
+
+        # Generate a random number of points and their relative positions for the asteroid
+        self.num_points = random.randint(5, 10)
+        self.relative_coords = [((math.cos(2 * math.pi / self.num_points * i) * self.size) + random.randint(-10, 10),
+                        (math.sin(2 * math.pi / self.num_points * i) * self.size) + random.randint(-10, 10)) for i in range(self.num_points)]
+        
+        # Velocity
+        self.vel_x = random.randint(1, 3)
+        self.vel_y = random.randint(3, 3)
 
     def move(self):
-        self.y = self.y + self.speed1
-        self.x = self.x + self.speed2
-        if self.y < 0 - self.size[0]:
-            self.y = MAX_SIZE_Y
-        if self.y > MAX_SIZE_Y:
-            self.y = 0 - self.size[0]
-        if self.x > MAX_SIZE_X:
-            self.x = 0 - self.size[0]
-        if self.x < 0 - self.size[0]:
-            self.x = MAX_SIZE_X
+        self.x += self.vel_x
+        self.y += self.vel_y
 
-    def draw(self, window):
+        # Wrap the asteroid around if it goes off the screen
+        if self.x < 0: self.x = MAX_SIZE_X
+        if self.x > MAX_SIZE_X: self.x = 0
+        if self.y < 0: self.y = MAX_SIZE_Y
+        if self.y > MAX_SIZE_Y: self.y = 0
+
+    def get_absolute_coords(self):
+        return [(self.x + dx, self.y + dy) for (dx, dy) in self.relative_coords]
+
+    def draw(self, screen):
+        # Get the actual positions
         self.move()
-        pygame.draw.rect(window, GREEN, (self.x, self.y, self.size[1], self.size[0]))
+        pygame.draw.polygon(screen, GREEN, self.get_absolute_coords(), 1)
 
 
 class Player(Sprite):
     def __init__(self, x, y):
-        self.width = 50
-        self.height = 50
-        self.size = (self.height, self.width)
+        self.size = 100
+        self.radius = 50
 
         self.x = x
-        self.y = y - self.height
+        self.y = y - self.radius
 
         self.speed = 5
 
@@ -143,6 +148,7 @@ class Player(Sprite):
         self.x = self.x + self.speed 
         if self.x > MAX_SIZE_X:
             self.x = -50
+
     def up(self):
         self.y = self.y - self.speed
         if self.y < -50:
@@ -154,7 +160,7 @@ class Player(Sprite):
             self.y = -50
 
     def shoot(self):
-        bullet = Bullet(self.y, self.x + self.width / 2)
+        bullet = Bullet(self.y, self.x + self.radius / 2)
         sprites.append(bullet)
 
     def handle_events(self):
@@ -171,13 +177,13 @@ class Player(Sprite):
             self.shoot()
 
     def draw(self, window):
-        pygame.draw.rect(window, RED, (self.x, self.y, self.width, self.height))
+        pygame.draw.rect(window, RED, (self.x, self.y, self.radius, self.radius))
 
 
 class Bullet(Sprite):
     def __init__(self, y, x):
        self.speed = 25
-       self.size = (5, 50)
+       self.radius = 5
 
        self.start_x = x
        self.start_y = y
@@ -193,7 +199,7 @@ class Bullet(Sprite):
 
     def draw(self, window):
         self.y = self.y - self.speed
-        pygame.draw.rect(window, BLUE, (self.x, self.y, self.size[0], self.size[1]))
+        pygame.draw.rect(window, BLUE, (self.x, self.y, self.radius, self.radius))
     
 
 if __name__ == "__main__":
