@@ -3,6 +3,7 @@ import math
 import pygame
 import random
 import sys
+import time
 
 
 print (":)")
@@ -102,7 +103,7 @@ class Astroid(Sprite):
         self.radius = self.size // 2
 
         # Generate a random number of points and their relative positions for the asteroid
-        self.num_points = random.randint(5, 10)
+        self.num_points = random.randint(15, 30)
         self.relative_coords = [((math.cos(2 * math.pi / self.num_points * i) * self.size) + random.randint(-10, 10),
                         (math.sin(2 * math.pi / self.num_points * i) * self.size) + random.randint(-10, 10)) for i in range(self.num_points)]
         
@@ -131,8 +132,11 @@ class Astroid(Sprite):
 
 class Player(Sprite):
     def __init__(self, x, y):
-        self.size = 100
-        self.radius = 50
+        self.size = 50
+        self.radius = self.size // 2
+
+        self.shoot_speed = 0.2
+        self.time_last_shot = self.shoot_speed
 
         self.x = x
         self.y = y - self.radius
@@ -160,7 +164,13 @@ class Player(Sprite):
             self.y = -50
 
     def shoot(self):
-        bullet = Bullet(self.y, self.x + self.radius / 2)
+        shoot_now = time.time()
+        if shoot_now - self.time_last_shot < self.shoot_speed:
+            return
+
+        self.time_last_shot = shoot_now
+
+        bullet = Bullet(self.y, self.x)
         sprites.append(bullet)
 
     def handle_events(self):
@@ -177,13 +187,14 @@ class Player(Sprite):
             self.shoot()
 
     def draw(self, window):
-        pygame.draw.rect(window, RED, (self.x, self.y, self.radius, self.radius))
+        pygame.draw.polygon(window, RED, [(self.x - self.radius, self.y), (self.x + self.radius, self.y), (self.x, self.y - self.size * 1.5)], 0)
 
 
 class Bullet(Sprite):
     def __init__(self, y, x):
-       self.speed = 25
-       self.radius = 5
+       self.speed = 10
+       self.size = 10
+       self.radius = self.size // 2
 
        self.start_x = x
        self.start_y = y
@@ -191,7 +202,7 @@ class Bullet(Sprite):
        self.x = x
        self.y = y
 
-       self.travel_range = 250
+       self.travel_range = MAX_SIZE_Y
 
     def travel_distance(self):
         ''' Returns the distance the bullet has travelled '''
@@ -199,7 +210,7 @@ class Bullet(Sprite):
 
     def draw(self, window):
         self.y = self.y - self.speed
-        pygame.draw.rect(window, BLUE, (self.x, self.y, self.radius, self.radius))
+        pygame.draw.circle(window, BLUE, (self.x, self.y), self.radius)
     
 
 if __name__ == "__main__":
