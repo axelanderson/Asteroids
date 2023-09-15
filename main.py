@@ -20,7 +20,7 @@ MAX_SIZE_Y = 480
 
 
 class Game:
-    def __init__(self, size, player, astroid1):
+    def __init__(self, size, player):
         pygame.init()
         self.running = True
         self.screen = pygame.display.set_mode(size)
@@ -29,7 +29,6 @@ class Game:
         self.background_color_win = (YELLOW)
         #self.background_color = ("red")
         self.background_color_game = (0, 0, 0)
-        self.astroid1 = astroid1
         #self.win = False
         #self.win_time = 0
 
@@ -70,8 +69,9 @@ class Game:
     def collision_check(self, entity1, entity2):
         is_player_or_bullet_1 = type(entity1) == Player or type(entity1) == Bullet
         is_player_or_bullet_2 = type(entity2) == Player or type(entity2) == Bullet
+        is_both_asteroids = type(entity1) == Asteroid and type(entity2) == Asteroid
 
-        if is_player_or_bullet_1 and is_player_or_bullet_2:
+        if is_player_or_bullet_1 and is_player_or_bullet_2 or is_both_asteroids:
             return False
 
         x_collision = False
@@ -94,7 +94,7 @@ class Sprite(abc.ABC):
         pass
 
 
-class Astroid(Sprite):
+class Asteroid(Sprite):
     
     def __init__(self):
         self.x = random.randint(0, MAX_SIZE_X)
@@ -103,13 +103,17 @@ class Astroid(Sprite):
         self.radius = self.size // 2
 
         # Generate a random number of points and their relative positions for the asteroid
-        self.num_points = random.randint(15, 30)
+        self.num_points = random.randint(350, 500)
         self.relative_coords = [((math.cos(2 * math.pi / self.num_points * i) * self.size) + random.randint(-10, 10),
                         (math.sin(2 * math.pi / self.num_points * i) * self.size) + random.randint(-10, 10)) for i in range(self.num_points)]
         
         # Velocity
-        self.vel_x = random.randint(1, 3)
-        self.vel_y = random.randint(3, 3)
+        self.vel_x = random.randint(-4, 4)
+        self.vel_y = random.randint(-4, 4)
+
+        while self.vel_x == 0 and self.vel_y == 0:
+            self.vel_x = random.randint(-4, 4)
+            self.vel_y = random.randint(-4, 4)
 
     def move(self):
         self.x += self.vel_x
@@ -143,12 +147,12 @@ class Player(Sprite):
 
         self.speed = 5
 
-    def left(self):
+    def turn_left(self):
         self.x = self.x - self.speed
         if self.x < -50:
             self.x = MAX_SIZE_X 
 
-    def right(self):
+    def turn_right(self):
         self.x = self.x + self.speed 
         if self.x > MAX_SIZE_X:
             self.x = -50
@@ -176,9 +180,9 @@ class Player(Sprite):
     def handle_events(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_a]:
-            self.left()
+            self.turn_left()
         if keys[pygame.K_d]:
-            self.right()
+            self.turn_right()
         if keys[pygame.K_w]:
             self.up()
         if keys[pygame.K_s]:
@@ -187,7 +191,7 @@ class Player(Sprite):
             self.shoot()
 
     def draw(self, window):
-        pygame.draw.polygon(window, RED, [(self.x - self.radius, self.y), (self.x + self.radius, self.y), (self.x, self.y - self.size * 1.5)], 0)
+        pygame.draw.polygon(window, RED, [(self.x - self.radius, self.y), (self.x + self.radius, self.y), (self.x, self.y - self.size)], 0)
 
 
 class Bullet(Sprite):
@@ -219,7 +223,10 @@ if __name__ == "__main__":
     # size[1] == 480, meaning bottom of the screen
     player = Player(position[0], position[1])
     sprites.append(player)
-    astroid1 = Astroid()
-    sprites.append(astroid1)
-    game = Game(size, player, astroid1)
+
+    for i in range(4):
+        asteroid = Asteroid()
+        sprites.append(asteroid)
+
+    game = Game(size, player)
     game.game_loop()
