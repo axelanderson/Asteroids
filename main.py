@@ -5,10 +5,10 @@ import random
 import sys
 import time
 
-
 print (":)")
 
 sprites = []
+
 # Colors
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
@@ -36,11 +36,34 @@ class Game:
         while self.running:
             self.background_type = self.background_color_game
             # I wanted to make the background yellow when you win.
-            for sprite1 in sprites:
-                for sprite2 in sprites:
+
+            if player not in sprites:
+                sys.exit(0)
+
+            # If no more asteroids, you win!
+            has_asteroid = False
+            for sprite in sprites:
+                if type(sprite) == Asteroid:
+                    has_asteroid = True
+                    break
+            if not has_asteroid:
+                make_asteroids(5)
+
+            collisions = []
+            for i in range(len(sprites)):
+                sprite1 = sprites[i]
+                for j in range(i+1, len(sprites)):
+                    sprite2 = sprites[j]
                     if sprite1 != sprite2:
                         if self.collision_check(sprite1, sprite2):
-                            sys.exit(0)
+                            collisions.append(sprite1)
+                            collisions.append(sprite2)
+
+            # Remove any sprites that had a collision
+            for i in range(len(sprites) - 1, -1, -1):
+                if sprites[i] in collisions:
+                    sprites.pop(i)
+
 
             events = pygame.event.get()
 
@@ -52,7 +75,7 @@ class Game:
             self.screen.fill(self.background_type)
             self.player.handle_events()
 
-
+            # Get rid of bullets that have travelled too far
             for i in range(len(sprites) - 1, -1, -1):
                 if type(sprites[i]) == Bullet:
                     if sprites[i].travel_distance() > sprites[i].travel_range:
@@ -74,23 +97,15 @@ class Game:
         if is_player_or_bullet_1 and is_player_or_bullet_2 or is_both_asteroids:
             return False
 
-        x_collision = False
-        if (entity1.x >= entity2.x and entity1.x <= entity2.x + entity2.size) or (entity1.x + entity1.size >= entity2.x and entity2.x and entity1.x + entity1.size <= entity2.x + entity2.size):
-            x_collision = True
+        d = math.sqrt((entity1.x - entity2.x)**2 + (entity1.y - entity2.y)**2)
 
-        y_collision = False
-        if (entity1.y >= entity2.y and entity1.y <= entity2.y + entity2.size) or (entity1.y + entity1.size>= entity2.y and entity2.y and entity1.y + entity1.size <= entity2.y + entity2.size):
-            y_collision = True
-
-        if x_collision and y_collision:
-            return True
+        return d - entity1.radius - entity2.radius < 0
 
 
 class Sprite(abc.ABC):
 
     @abc.abstractmethod
     def draw(self):
-        ''' Draws the cool sprite in a cool place doing cool things '''
         pass
 
 
@@ -103,7 +118,8 @@ class Asteroid(Sprite):
         self.radius = self.size // 2
 
         # Generate a random number of points and their relative positions for the asteroid
-        self.num_points = random.randint(350, 500)
+        self.num_points = 8
+        #self.num_points = random.randint(350, 500)
         self.relative_coords = [((math.cos(2 * math.pi / self.num_points * i) * self.size) + random.randint(-10, 10),
                         (math.sin(2 * math.pi / self.num_points * i) * self.size) + random.randint(-10, 10)) for i in range(self.num_points)]
         
@@ -145,17 +161,23 @@ class Player(Sprite):
         self.x = x
         self.y = y - self.radius
 
+        # In radians
+        self.direction = 0
+        self.direction_change_speed = 0.2
+
         self.speed = 5
 
     def turn_left(self):
         self.x = self.x - self.speed
         if self.x < -50:
             self.x = MAX_SIZE_X 
+        self.direction -= self.direction_change_speed
 
     def turn_right(self):
         self.x = self.x + self.speed 
         if self.x > MAX_SIZE_X:
             self.x = -50
+        self.direction += self.direction_change_speed
 
     def up(self):
         self.y = self.y - self.speed
@@ -216,6 +238,11 @@ class Bullet(Sprite):
         self.y = self.y - self.speed
         pygame.draw.circle(window, BLUE, (self.x, self.y), self.radius)
     
+def make_asteroids(num_asteroids):
+    for i in range(num_asteroids):
+        asteroid = Asteroid()
+        sprites.append(asteroid)
+
 
 if __name__ == "__main__":
     size = (MAX_SIZE_X, MAX_SIZE_Y)
@@ -223,10 +250,6 @@ if __name__ == "__main__":
     # size[1] == 480, meaning bottom of the screen
     player = Player(position[0], position[1])
     sprites.append(player)
-
-    for i in range(4):
-        asteroid = Asteroid()
-        sprites.append(asteroid)
 
     game = Game(size, player)
     game.game_loop()
